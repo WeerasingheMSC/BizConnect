@@ -15,10 +15,24 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true
+    },
+    userType: {
+        type: String,
+        enum: ['user', 'business'],
+        default: 'user',
+        required: true
+    },
+    isVerified: {
+        type: Boolean,
+        default: false
+    },
+    resetPasswordToken: {
+        type: String
+    },
+    resetPasswordExpires: {
+        type: Date
     }
-      }
- ,{ timestamps: true}
-);
+}, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
 

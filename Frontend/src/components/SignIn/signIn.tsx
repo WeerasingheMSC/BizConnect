@@ -1,10 +1,92 @@
-import { FaUserLarge,FaLock } from "react-icons/fa6";
-import { IoMdEye,IoMdEyeOff } from "react-icons/io";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { FaUserLarge, FaLock } from "react-icons/fa6";
+import { IoMdEye, IoMdEyeOff } from "react-icons/io";
+import { MdError } from "react-icons/md";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { login } from "../../services/authService";
 
-const signIn = () => {
-    const [showPassword, setShowPassword] = useState(false);
+const SignIn = () => {
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    rememberMe: false
+  });
+
+  const navigate = useNavigate();
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+    setFormData({
+      ...formData,
+      [e.target.name]: value
+    });
+    // Clear error when user starts typing
+    if (error) {
+      setError("");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    console.log("Form submitted with data:", { email: formData.email, password: "***" });
+
+    // Validation
+    if (!formData.email || !formData.password) {
+      setError("Email and password are required");
+      return;
+    }
+
+    // Clear previous errors and start loading
+    setError("");
+    setLoading(true);
+
+    try {
+      console.log("Calling login API...");
+      const response = await login({
+        email: formData.email,
+        password: formData.password
+      });
+
+      console.log("Login response:", response);
+
+      // Defensive check - ensure we have valid user data
+      if (!response.user) {
+        throw new Error("Invalid credentials");
+      }
+
+      console.log("Login successful, clearing form...");
+      
+      // Only clear form on successful login
+      setFormData({
+        email: "",
+        password: "",
+        rememberMe: false
+      });
+      
+      // Redirect based on user type
+      if (response.user.userType === 'business') {
+        navigate('/business/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      console.log("Login error caught:", err);
+      console.log("Error response:", err.response?.data);
+      console.log("Form data before error:", formData);
+      
+      // Don't clear form on error - keep user's input
+      setError(err.response?.data?.message || err.message || "Invalid credentials");
+      
+      console.log("Form data after error:", formData);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div 
@@ -20,17 +102,20 @@ const signIn = () => {
         </div>
 
         {/* Sign In Form */}
-        <form className=" space-y-10">
+        <form className=" space-y-10" onSubmit={handleSubmit}>
           {/* Email/Username Input */}
           <div>
-            <label htmlFor="username" className="block text-sm font-medium text-gray-900 mb-2">
-              Username or Email:
+            <label htmlFor="email" className="block text-sm font-medium text-gray-900 mb-2">
+              Email:
             </label>
             <FaUserLarge className="absolute w-6 h-6 mt-3 ml-2 text-black" />
             <input
-              type="text"
-              id="username"
-              placeholder="Enter your username"
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              placeholder="Enter your email"
               className="w-full px-12 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
             />
           </div>
@@ -44,6 +129,9 @@ const signIn = () => {
             <input
               type={showPassword ? "text" : "password"}
               id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               placeholder="Enter your password"
               className="w-full px-12 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition-all duration-200"
             />
@@ -58,6 +146,10 @@ const signIn = () => {
                 onClick={() => setShowPassword(!showPassword)}
               />
             )}
+            {/* Inline Error Message */}
+            {error && (
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+            )}
           </div>
 
           {/* Remember Me & Forgot Password */}
@@ -65,6 +157,9 @@ const signIn = () => {
             <label className="flex items-center">
               <input
                 type="checkbox"
+                name="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleChange}
                 className="w-4 h-4 text-amber-500 border-gray-300 rounded focus:ring-amber-500"
               />
               <span className="ml-2 text-sm text-gray-600">Remember me</span>
@@ -77,9 +172,10 @@ const signIn = () => {
           {/* Sign In Button */}
           <button
             type="submit"
-            className="w-full bg-amber-500 text-white font-semibold py-3 rounded-lg shadow-lg hover:bg-amber-600 hover:shadow-xl active:scale-95 transition-all duration-200"
+            disabled={loading}
+            className="w-full bg-amber-500 text-white font-semibold py-3 rounded-lg shadow-lg hover:bg-amber-600 hover:shadow-xl active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Sign In
+            {loading ? "Signing In..." : "Sign In"}
           </button>
         </form>
 
@@ -97,4 +193,4 @@ const signIn = () => {
   )
 }
 
-export default signIn
+export default SignIn
