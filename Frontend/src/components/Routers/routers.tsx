@@ -8,6 +8,10 @@ import BusinessDashboard from '../Dashboard/BusinessDashboard'
 import BusinessProfileForm from '../BusinessOwner/BusinessProfileForm'
 import BusinessDetail from '../BusinessOwner/BusinessDetail'
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute'
+import UserDashboard from '../User/UserDashboard'
+import SearchBusinesses from '../User/SearchBusinesses'
+import UserBusinessDetail from '../User/UserBusinessDetail'
+import UserBookmarks from '../User/UserBookmarks'
 
 const routers = () => {
   return (
@@ -57,6 +61,40 @@ const routers = () => {
                   element={
                     <ProtectedRoute requireUserType='business'>
                       <BusinessDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                
+                {/* User Routes */}
+                <Route 
+                  path='/user/dashboard' 
+                  element={
+                    <ProtectedRoute requireUserType='user'>
+                      <UserDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route 
+                  path='/user/search' 
+                  element={
+                    <ProtectedRoute requireUserType='user'>
+                      <SearchBusinesses />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route 
+                  path='/user/business/:id' 
+                  element={
+                    <ProtectedRoute requireUserType='user'>
+                      <UserBusinessDetail />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route 
+                  path='/user/bookmarks' 
+                  element={
+                    <ProtectedRoute requireUserType='user'>
+                      <UserBookmarks />
                     </ProtectedRoute>
                   }
                 />

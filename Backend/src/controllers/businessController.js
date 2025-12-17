@@ -233,3 +233,79 @@ export const getBusinessById = async (req, res) => {
         });
     }
 };
+
+// @desc    Search businesses with filters
+// @route   GET /api/v1/business/search
+// @access  Public
+export const searchBusinesses = async (req, res) => {
+    try {
+        const { 
+            keyword, 
+            category, 
+            city, 
+            state, 
+            services,
+            sortBy = 'createdAt',
+            order = 'desc',
+            page = 1,
+            limit = 10
+        } = req.query;
+
+        // Build search query
+        const query = { isActive: true };
+
+        // Text search in business name and description
+        if (keyword) {
+            query.$or = [
+                { businessName: { $regex: keyword, $options: 'i' } },
+                { description: { $regex: keyword, $options: 'i' } }
+            ];
+        }
+
+        // Filter by category
+        if (category) {
+            query.category = { $regex: category, $options: 'i' };
+        }
+
+        // Filter by location
+        if (city) {
+            query['address.city'] = { $regex: city, $options: 'i' };
+        }
+
+        if (state) {
+            query['address.state'] = { $regex: state, $options: 'i' };
+        }
+
+        // Filter by services
+        if (services) {
+            query['services.name'] = { $regex: services, $options: 'i' };
+        }
+
+        // Sort options
+        const sortOptions = {};
+        sortOptions[sortBy] = order === 'asc' ? 1 : -1;
+
+        const businesses = await Business.find(query)
+            .populate('owner', 'name email')
+            .limit(parseInt(limit))
+            .skip((parseInt(page) - 1) * parseInt(limit))
+            .sort(sortOptions);
+
+        const count = await Business.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            businesses,
+            totalPages: Math.ceil(count / parseInt(limit)),
+            currentPage: parseInt(page),
+            total: count
+        });
+    } catch (error) {
+        console.error("Search businesses error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};

@@ -31,7 +31,11 @@ const userSchema = new mongoose.Schema({
     },
     resetPasswordExpires: {
         type: Date
-    }
+    },
+    bookmarks: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Business'
+    }]
 }, { timestamps: true });
 
 const User = mongoose.model("User", userSchema);
