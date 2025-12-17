@@ -54,6 +54,7 @@ export interface BusinessResponse {
     message?: string;
     business?: Business;
     businesses?: Business[];
+    count?: number;
     totalPages?: number;
     currentPage?: number;
     total?: number;
@@ -65,7 +66,7 @@ export const createBusiness = async (data: Partial<Business>): Promise<BusinessR
     return response.data;
 };
 
-// Get my business
+// Get my businesses (returns all businesses owned by current user)
 export const getMyBusiness = async (): Promise<BusinessResponse> => {
     const response = await api.get('/business/my-business');
     return response.data;

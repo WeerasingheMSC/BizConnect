@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { FaBuilding, FaPhone, FaMapMarkerAlt, FaGlobe, FaPlus, FaTrash } from 'react-icons/fa';
-import { createBusiness, getMyBusiness, updateBusiness } from '../../services/businessService';
+import { createBusiness, getBusinessById, updateBusiness } from '../../services/businessService';
 import type { Business, Service } from '../../services/businessService';
+import LogoUpload from './LogoUpload';
 
 const BusinessProfileForm = () => {
   const navigate = useNavigate();
+  const { id } = useParams<{ id: string }>();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isEdit, setIsEdit] = useState(false);
-  const [businessId, setBusinessId] = useState('');
 
   const [formData, setFormData] = useState<Partial<Business>>({
     businessName: '',
@@ -54,20 +55,22 @@ const BusinessProfileForm = () => {
   ];
 
   useEffect(() => {
-    fetchBusinessProfile();
-  }, []);
+    if (id) {
+      fetchBusinessProfile();
+    }
+  }, [id]);
 
   const fetchBusinessProfile = async () => {
+    if (!id) return;
+    
     try {
-      const response = await getMyBusiness();
+      const response = await getBusinessById(id);
       if (response.success && response.business) {
         setFormData(response.business);
-        setBusinessId(response.business._id || '');
         setIsEdit(true);
       }
     } catch (err: any) {
-      // No business profile yet, stay in create mode
-      console.log('No business profile found');
+      console.log('Error fetching business:', err);
     }
   };
 
@@ -115,6 +118,20 @@ const BusinessProfileForm = () => {
     }));
   };
 
+  const handleLogoChange = (logoUrl: string) => {
+    setFormData(prev => ({
+      ...prev,
+      logo: logoUrl
+    }));
+  };
+
+  const handleLogoRemove = () => {
+    setFormData(prev => ({
+      ...prev,
+      logo: ''
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -132,13 +149,12 @@ const BusinessProfileForm = () => {
     setLoading(true);
 
     try {
-      if (isEdit && businessId) {
-        await updateBusiness(businessId, formData);
+      if (isEdit && id) {
+        await updateBusiness(id, formData);
         setSuccess('Business profile updated successfully!');
       } else {
         await createBusiness(formData);
         setSuccess('Business profile created successfully!');
-        setIsEdit(true);
       }
 
       setTimeout(() => {
@@ -179,6 +195,15 @@ const BusinessProfileForm = () => {
               <FaBuilding className="mr-2 text-amber-500" />
               Basic Information
             </h2>
+
+            {/* Logo Upload */}
+            <div className="mb-6">
+              <LogoUpload
+                currentLogo={formData.logo}
+                onLogoChange={handleLogoChange}
+                onLogoRemove={handleLogoRemove}
+              />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="md:col-span-2">

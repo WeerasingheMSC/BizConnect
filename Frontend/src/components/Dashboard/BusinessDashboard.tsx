@@ -6,22 +6,24 @@ import { getMyBusiness } from '../../services/businessService';
 const BusinessDashboard = () => {
   const navigate = useNavigate();
   const user = getStoredUser();
-  const [business, setBusiness] = useState<any>(null);
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchBusiness = async () => {
+    const fetchBusinesses = async () => {
       try {
         const data = await getMyBusiness();
-        setBusiness(data);
+        if (data.success && data.businesses) {
+          setBusinesses(data.businesses);
+        }
       } catch (error) {
-        console.error('Error fetching business:', error);
+        console.error('Error fetching businesses:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchBusiness();
+    fetchBusinesses();
   }, []);
 
   const handleLogout = () => {
@@ -68,65 +70,60 @@ const BusinessDashboard = () => {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
               </div>
-            ) : business ? (
+            ) : businesses && businesses.length > 0 ? (
               <div>
-                {/* Business Profile Summary */}
-                <div className="mb-8 p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border-l-4 border-amber-500">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="text-2xl font-bold text-gray-800 mb-2">{business.businessName}</h3>
-                      <p className="text-gray-600 mb-2">{business.category}</p>
-                      <p className="text-gray-600 mb-2">{business.contactEmail} | {business.contactPhone}</p>
-                      <p className="text-gray-600">
-                        <span className="font-semibold">Views:</span> {business.views || 0}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => navigate('/business/profile')}
-                      className="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-all duration-200 shadow-md"
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">
+                    My Businesses ({businesses.length})
+                  </h3>
+                  <button
+                    onClick={() => navigate('/business/profile')}
+                    className="bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-all duration-200 shadow-md"
+                  >
+                    + Add New Business
+                  </button>
+                </div>
+
+                {/* Business Cards Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {businesses.map((business) => (
+                    <div
+                      key={business._id}
+                      onClick={() => navigate(`/business/detail/${business._id}`)}
+                      className="p-6 bg-gradient-to-r from-amber-50 to-orange-50 rounded-lg border-l-4 border-amber-500 cursor-pointer hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1"
                     >
-                      Edit Profile
-                    </button>
-                  </div>
-                </div>
+                      <div className="flex items-start space-x-4">
+                        {/* Logo */}
+                        {business.logo && (
+                          <div className="shrink-0">
+                            <img
+                              src={business.logo}
+                              alt={business.businessName}
+                              className="w-20 h-20 rounded-lg object-cover shadow-md border-2 border-amber-300"
+                            />
+                          </div>
+                        )}
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="p-6 bg-white rounded-lg shadow border-l-4 border-blue-500">
-                    <h4 className="text-sm font-semibold text-gray-600 mb-2">TOTAL VIEWS</h4>
-                    <p className="text-3xl font-bold text-gray-800">{business.views || 0}</p>
-                  </div>
-                  <div className="p-6 bg-white rounded-lg shadow border-l-4 border-green-500">
-                    <h4 className="text-sm font-semibold text-gray-600 mb-2">SERVICES OFFERED</h4>
-                    <p className="text-3xl font-bold text-gray-800">{business.services?.length || 0}</p>
-                  </div>
-                  <div className="p-6 bg-white rounded-lg shadow border-l-4 border-purple-500">
-                    <h4 className="text-sm font-semibold text-gray-600 mb-2">STATUS</h4>
-                    <p className="text-xl font-bold text-gray-800">
-                      {business.isActive ? (
-                        <span className="text-green-600">Active</span>
-                      ) : (
-                        <span className="text-red-600">Inactive</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Services List */}
-                {business.services && business.services.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-xl font-bold text-gray-800 mb-4">Your Services</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {business.services.map((service: any, index: number) => (
-                        <div key={index} className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                          <h4 className="font-semibold text-gray-800 mb-1">{service.name}</h4>
-                          <p className="text-sm text-gray-600 mb-2">{service.description}</p>
-                          <p className="text-lg font-bold text-amber-600">${service.price}</p>
+                        {/* Business Info */}
+                        <div className="flex-1">
+                          <h4 className="text-xl font-bold text-gray-800 mb-2">{business.businessName}</h4>
+                          <p className="text-gray-600 mb-2">
+                            <span className="inline-block bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold">
+                              {business.category}
+                            </span>
+                          </p>
+                          <p className="text-sm text-gray-600 mb-2">{business.contactEmail}</p>
+                          <div className="flex items-center justify-between">
+                            <p className="text-sm text-gray-600">
+                              <span className="font-semibold">Views:</span> {business.views || 0}
+                            </p>
+                            <p className="text-xs text-amber-600 font-semibold">Click to view details →</p>
+                          </div>
                         </div>
-                      ))}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             ) : (
               <div className="p-8 bg-amber-50 rounded-lg border-l-4 border-amber-500">
@@ -134,13 +131,13 @@ const BusinessDashboard = () => {
                   🎉 Welcome to BizConnect!
                 </h3>
                 <p className="text-gray-700 mb-6">
-                  You haven't created your business profile yet. Get started by creating your profile to showcase your business and services!
+                  You haven't created any business profiles yet. Get started by creating your first business profile to showcase your businesses and services!
                 </p>
                 <button
                   onClick={() => navigate('/business/profile')}
                   className="bg-amber-500 text-white px-8 py-3 rounded-lg hover:bg-amber-600 transition-all duration-200 shadow-md font-semibold"
                 >
-                  Create Business Profile
+                  Create Your First Business
                 </button>
               </div>
             )}
