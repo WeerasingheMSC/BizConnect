@@ -60,3 +60,33 @@ export const authorize = (...userTypes) => {
         next();
     };
 };
+
+// Optional authentication - attach user if token exists, but don't require it
+export const optionalAuth = async (req, res, next) => {
+    try {
+        let token;
+
+        // Check if token exists in headers
+        if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
+        if (token) {
+            try {
+                // Verify token
+                const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+                
+                // Get user from token
+                req.user = await User.findById(decoded.id).select('-password');
+            } catch (error) {
+                // If token is invalid, just continue without user
+                req.user = null;
+            }
+        }
+
+        next();
+    } catch (error) {
+        // On any error, just continue without user
+        next();
+    }
+};

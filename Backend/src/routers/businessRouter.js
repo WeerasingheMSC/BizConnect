@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { protect } from '../middleware/auth.js';
+import { protect, optionalAuth } from '../middleware/auth.js';
 import {
     createBusiness,
     getMyBusiness,
@@ -38,6 +38,6 @@ router.delete('/:id', protect, deleteBusiness);
 // Public routes - MUST come after specific routes
 router.get('/search/filter', searchBusinesses);
 router.get('/', getAllBusinesses);
-router.get('/:id', getBusinessById);
+router.get('/:id', optionalAuth, getBusinessById);
 
 export default router;

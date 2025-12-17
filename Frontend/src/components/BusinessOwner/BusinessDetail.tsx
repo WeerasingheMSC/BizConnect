@@ -27,6 +27,8 @@ const BusinessDetail = () => {
     try {
       const response = await getBusinessById(id);
       if (response.success && response.business) {
+        console.log('Fetched business data:', response.business);
+        console.log('Services:', response.business.services);
         setBusiness(response.business);
       }
     } catch (err: any) {
@@ -209,7 +211,7 @@ const BusinessDetail = () => {
           </div>
 
           {/* Services */}
-          {business.services && business.services.length > 0 && (
+          {business.services && business.services.length > 0 ? (
             <div className="bg-white rounded-lg shadow-md p-8 mb-6">
               <h2 className="text-2xl font-bold text-gray-800 mb-6">Services Offered</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -220,11 +222,16 @@ const BusinessDetail = () => {
                       <p className="text-gray-600 mb-3">{service.description}</p>
                     )}
                     {service.price && (
-                      <p className="text-2xl font-bold text-amber-600">${service.price}</p>
+                      <p className="text-2xl font-bold text-amber-600">{service.price}</p>
                     )}
                   </div>
                 ))}
               </div>
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-md p-8 mb-6">
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">Services Offered</h2>
+              <p className="text-gray-600">No services added yet. Edit your business profile to add services.</p>
             </div>
           )}
 
