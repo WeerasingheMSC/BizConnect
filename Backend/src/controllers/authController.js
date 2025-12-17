@@ -2,6 +2,7 @@ import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
+import { sendPasswordResetEmail } from "../utils/emailService.js";
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -205,23 +206,34 @@ export const forgotPassword = async (req, res) => {
             });
         }
 
-        // Generate reset token (in production, send email with reset link)
+        // Generate reset token (valid for 24 hours)
         const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'your-secret-key', {
-            expiresIn: '1h'
+            expiresIn: '24h'
         });
 
-        // Save reset token and expiry
+        // Save reset token and expiry (24 hours)
         user.resetPasswordToken = resetToken;
-        user.resetPasswordExpires = Date.now() + 3600000; // 1 hour
+        user.resetPasswordExpires = Date.now() + 86400000; // 24 hours
         await user.save();
 
-        // In production, send email here
-        // For now, just return success message
+        // Send password reset email
+        try {
+            await sendPasswordResetEmail(user.email, resetToken);
+            console.log('Password reset email sent successfully to:', user.email);
+        } catch (emailError) {
+            console.error('Email sending failed:', emailError);
+            // Don't fail the request if email fails - token is still saved
+            return res.status(200).json({
+                success: true,
+                message: "Password reset token generated. Email service temporarily unavailable.",
+                // Remove this in production
+                resetToken
+            });
+        }
+
         res.status(200).json({
             success: true,
-            message: "Password reset instructions have been sent to your email",
-            // In development only - remove in production
-            resetToken
+            message: "Password reset link has been sent to your email"
         });
     } catch (error) {
         console.error("Forgot password error:", error);
