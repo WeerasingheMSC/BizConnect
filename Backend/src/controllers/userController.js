@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Business from "../models/Business.js";
 import bcrypt from "bcryptjs";
+import { createNotification } from "./notificationController.js";
 
 export const createUser = async (req, res) => {
     try {
@@ -63,6 +64,15 @@ export const updateUser = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // Send profile update confirmation notification
+        await createNotification({
+            recipient: updatedUser._id,
+            type: 'profile_updated',
+            title: 'Profile Updated',
+            message: 'Your profile has been successfully updated.',
+            link: updatedUser.userType === 'business' ? '/business/dashboard' : '/user/dashboard'
+        });
+
         res.status(200).json({ message: "User updated successfully", user: updatedUser });
     } catch (error) {
         res.status(500).json({ message: "Server error", error });
@@ -114,6 +124,27 @@ export const addBookmark = async (req, res) => {
         // Add to bookmarks
         user.bookmarks.push(businessId);
         await user.save();
+
+        // Create notification for business owner
+        await createNotification({
+            recipient: business.owner,
+            sender: userId,
+            type: 'business_bookmarked',
+            title: 'New Bookmark',
+            message: `${user.name} bookmarked your business "${business.businessName}"`,
+            relatedBusiness: businessId,
+            link: `/business/detail/${businessId}`
+        });
+
+        // Create confirmation notification for the user who bookmarked
+        await createNotification({
+            recipient: userId,
+            type: 'system',
+            title: 'Bookmark Added',
+            message: `You bookmarked "${business.businessName}". View your bookmarks anytime from your dashboard.`,
+            relatedBusiness: businessId,
+            link: `/user/bookmarks`
+        });
 
         res.status(200).json({
             success: true,

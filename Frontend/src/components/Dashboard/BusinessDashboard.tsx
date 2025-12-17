@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { logout, getStoredUser } from '../../services/authService';
 import { useState, useEffect } from 'react';
 import { getMyBusiness } from '../../services/businessService';
+import NotificationBell from '../Notifications/NotificationBell';
 
 const BusinessDashboard = () => {
   const navigate = useNavigate();
@@ -41,6 +42,7 @@ const BusinessDashboard = () => {
               <h1 className="ml-3 text-2xl font-bold text-gray-800">BizConnect Business</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationBell />
               <span className="text-gray-700">Welcome, {user?.name}!</span>
               <button
                 onClick={handleLogout}

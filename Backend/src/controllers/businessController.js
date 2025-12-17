@@ -1,6 +1,7 @@
 import Business from "../models/Business.js";
 import User from "../models/User.js";
 import { validationResult } from "express-validator";
+import { createNotification } from "./notificationController.js";
 
 // @desc    Create business profile
 // @route   POST /api/v1/business
@@ -32,6 +33,21 @@ export const createBusiness = async (req, res) => {
 
         const business = new Business(businessData);
         await business.save();
+
+        // Notify all regular users about new business
+        const regularUsers = await User.find({ userType: 'user' });
+        const notificationPromises = regularUsers.map(regularUser => 
+            createNotification({
+                recipient: regularUser._id,
+                sender: req.user.id,
+                type: 'business_created',
+                title: 'New Business Added',
+                message: `${user.name} just added a new business "${business.businessName}" in ${business.address?.city || 'your area'}`,
+                relatedBusiness: business._id,
+                link: `/business/detail/${business._id}`
+            })
+        );
+        await Promise.all(notificationPromises);
 
         res.status(201).json({
             success: true,
@@ -242,6 +258,20 @@ export const getBusinessById = async (req, res) => {
         if (shouldIncrementView) {
             business.views = (business.views || 0) + 1;
             await business.save();
+
+            // Create notification for business owner if user is authenticated
+            if (req.user) {
+                const viewer = await User.findById(req.user.id);
+                await createNotification({
+                    recipient: business.owner._id,
+                    sender: req.user.id,
+                    type: 'business_viewed',
+                    title: 'Business Viewed',
+                    message: `${viewer.name} viewed your business "${business.businessName}"`,
+                    relatedBusiness: business._id,
+                    link: `/business/detail/${business._id}`
+                });
+            }
         }
 
         res.status(200).json({
