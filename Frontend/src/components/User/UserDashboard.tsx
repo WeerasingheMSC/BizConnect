@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaBookmark, FaUser, FaMapMarkerAlt } from 'react-icons/fa';
 import { getUserProfile } from '../../services/userService';
 import type { UserProfile } from '../../services/userService';
+import NotificationBell from '../Notifications/NotificationBell';
 
 const UserDashboard = () => {
   const navigate = useNavigate();
@@ -52,6 +53,7 @@ const UserDashboard = () => {
               <h1 className="ml-3 text-2xl font-bold text-gray-800">BizConnect</h1>
             </div>
             <div className="flex items-center space-x-4">
+              <NotificationBell />
               <span className="text-gray-700">Welcome, {user?.name}!</span>
               <button
                 onClick={handleLogout}
