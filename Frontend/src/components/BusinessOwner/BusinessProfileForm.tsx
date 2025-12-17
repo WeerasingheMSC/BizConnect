@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { FaBuilding, FaPhone, FaMapMarkerAlt, FaGlobe, FaPlus, FaTrash } from 'react-icons/fa';
 import { createBusiness, getBusinessById, updateBusiness } from '../../services/businessService';
 import type { Business, Service } from '../../services/businessService';
+import { getCategories, getCountries } from '../../services/metaService';
+import type { Category, Country } from '../../services/metaService';
 import LogoUpload from './LogoUpload';
 
 const BusinessProfileForm = () => {
@@ -24,7 +26,7 @@ const BusinessProfileForm = () => {
       city: '',
       state: '',
       zipCode: '',
-      country: 'Sri Lanka'
+      country: ''
     },
     website: '',
     socialMedia: {
@@ -42,23 +44,46 @@ const BusinessProfileForm = () => {
     price: ''
   });
 
-  const categories = [
-    'Restaurant',
-    'Retail',
-    'Services',
-    'Healthcare',
-    'Education',
-    'Technology',
-    'Construction',
-    'Entertainment',
-    'Other'
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
   useEffect(() => {
+    fetchMetaData();
     if (id) {
       fetchBusinessProfile();
     }
   }, [id]);
+
+  const fetchMetaData = async () => {
+    try {
+      const [categoriesRes, countriesRes] = await Promise.all([
+        getCategories(),
+        getCountries()
+      ]);
+      
+      if (categoriesRes.success) {
+        setCategories(categoriesRes.categories);
+      }
+      if (countriesRes.success) {
+        setCountries(countriesRes.countries);
+        // Set default country to Sri Lanka
+        const defaultCountry = countriesRes.countries.find((c: Country) => c.code === 'LK');
+        if (defaultCountry && !formData.address?.country) {
+          setSelectedCountry(defaultCountry);
+          setFormData(prev => ({
+            ...prev,
+            address: {
+              ...prev.address!,
+              country: defaultCountry.name
+            }
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching metadata:', err);
+    }
+  };
 
   const fetchBusinessProfile = async () => {
     if (!id) return;
@@ -66,8 +91,14 @@ const BusinessProfileForm = () => {
     try {
       const response = await getBusinessById(id);
       if (response.success && response.business) {
-        setFormData(response.business);
+        const businessData = response.business;
+        setFormData(businessData);
         setIsEdit(true);
+        // Set selected country based on business data
+        if (businessData.address?.country && countries.length > 0) {
+          const country = countries.find(c => c.name === businessData.address?.country);
+          if (country) setSelectedCountry(country);
+        }
       }
     } catch (err: any) {
       console.log('Error fetching business:', err);
@@ -141,7 +172,7 @@ const BusinessProfileForm = () => {
     if (!formData.businessName || !formData.description || !formData.category ||
         !formData.contactEmail || !formData.contactPhone ||
         !formData.address?.street || !formData.address?.city ||
-        !formData.address?.state || !formData.address?.zipCode) {
+        !formData.address?.state || !formData.address?.zipCode || !formData.address?.country) {
       setError('Please fill in all required fields');
       return;
     }
@@ -234,7 +265,7 @@ const BusinessProfileForm = () => {
                 >
                   <option value="">Select Category</option>
                   {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat._id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
@@ -352,15 +383,19 @@ const BusinessProfileForm = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   State/Province <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="address.state"
                   value={formData.address?.state}
                   onChange={handleChange}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-amber-500"
-                  placeholder="Western Province"
                   required
-                />
+                  disabled={!selectedCountry}
+                >
+                  <option value="">Select State/Province</option>
+                  {selectedCountry?.states.map(state => (
+                    <option key={state.code} value={state.name}>{state.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -380,16 +415,32 @@ const BusinessProfileForm = () => {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Country
+                  Country <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   name="address.country"
                   value={formData.address?.country}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    handleChange(e);
+                    const country = countries.find(c => c.name === e.target.value);
+                    setSelectedCountry(country || null);
+                    // Reset state when country changes
+                    setFormData(prev => ({
+                      ...prev,
+                      address: {
+                        ...prev.address!,
+                        state: ''
+                      }
+                    }));
+                  }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-amber-500"
-                  placeholder="Sri Lanka"
-                />
+                  required
+                >
+                  <option value="">Select Country</option>
+                  {countries.map(country => (
+                    <option key={country._id} value={country.name}>{country.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>

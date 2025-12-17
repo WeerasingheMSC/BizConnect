@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { FaSearch, FaMapMarkerAlt, FaFilter, FaEye, FaArrowLeft, FaBookmark } from 'react-icons/fa';
 import { searchBusinesses } from '../../services/businessService';
 import type { Business } from '../../services/businessService';
+import { getCategories } from '../../services/metaService';
+import type { Category } from '../../services/metaService';
 
 const SearchBusinesses = () => {
   const navigate = useNavigate();
@@ -23,15 +25,26 @@ const SearchBusinesses = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  const categories = [
-    'Restaurant', 'Retail', 'Healthcare', 'Technology', 
-    'Education', 'Consulting', 'Construction', 'Entertainment',
-    'Fitness', 'Beauty & Spa', 'Legal Services', 'Other'
-  ];
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
 
   useEffect(() => {
     fetchBusinesses();
   }, [currentPage, sortBy, order]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await getCategories();
+      if (response.success) {
+        setCategories(response.categories);
+      }
+    } catch (err) {
+      console.error('Error fetching categories:', err);
+    }
+  };
 
   const fetchBusinesses = async () => {
     setLoading(true);
@@ -144,7 +157,7 @@ const SearchBusinesses = () => {
                 >
                   <option value="">All Categories</option>
                   {categories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
+                    <option key={cat._id} value={cat.name}>{cat.name}</option>
                   ))}
                 </select>
               </div>
