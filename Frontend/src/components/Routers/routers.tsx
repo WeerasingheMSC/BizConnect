@@ -5,6 +5,7 @@ import ForgotPassword from '../ForgotPassword/forgotPassword'
 import ForgotPasswordChange from '../ForgotPassword/forgotPasswordChange'
 import Dashboard from '../Dashboard/Dashboard'
 import BusinessDashboard from '../Dashboard/BusinessDashboard'
+import BusinessProfileForm from '../BusinessOwner/BusinessProfileForm'
 import ProtectedRoute from '../ProtectedRoute/ProtectedRoute'
 
 const routers = () => {
@@ -31,6 +32,14 @@ const routers = () => {
                   element={
                     <ProtectedRoute requireUserType='business'>
                       <BusinessDashboard />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route 
+                  path='/business/profile' 
+                  element={
+                    <ProtectedRoute requireUserType='business'>
+                      <BusinessProfileForm />
                     </ProtectedRoute>
                   }
                 />

@@ -1,0 +1,247 @@
+import Business from "../models/Business.js";
+import User from "../models/User.js";
+import { validationResult } from "express-validator";
+
+// @desc    Create business profile
+// @route   POST /api/v1/business
+// @access  Private (Business owners only)
+export const createBusiness = async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ 
+                success: false,
+                errors: errors.array() 
+            });
+        }
+
+        // Check if user is a business owner
+        const user = await User.findById(req.user.id);
+        if (user.userType !== 'business') {
+            return res.status(403).json({
+                success: false,
+                message: "Only business owners can create business profiles"
+            });
+        }
+
+        // Check if user already has a business
+        const existingBusiness = await Business.findOne({ owner: req.user.id });
+        if (existingBusiness) {
+            return res.status(400).json({
+                success: false,
+                message: "You already have a business profile"
+            });
+        }
+
+        const businessData = {
+            ...req.body,
+            owner: req.user.id
+        };
+
+        const business = new Business(businessData);
+        await business.save();
+
+        res.status(201).json({
+            success: true,
+            message: "Business profile created successfully",
+            business
+        });
+    } catch (error) {
+        console.error("Create business error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get business by owner
+// @route   GET /api/v1/business/my-business
+// @access  Private (Business owners only)
+export const getMyBusiness = async (req, res) => {
+    try {
+        const business = await Business.findOne({ owner: req.user.id }).populate('owner', 'name email');
+        
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: "No business profile found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            business
+        });
+    } catch (error) {
+        console.error("Get business error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// @desc    Update business profile
+// @route   PUT /api/v1/business/:id
+// @access  Private (Business owners only)
+export const updateBusiness = async (req, res) => {
+    try {
+        const business = await Business.findById(req.params.id);
+
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: "Business not found"
+            });
+        }
+
+        // Check if user owns the business
+        if (business.owner.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized to update this business"
+            });
+        }
+
+        const updatedBusiness = await Business.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Business updated successfully",
+            business: updatedBusiness
+        });
+    } catch (error) {
+        console.error("Update business error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// @desc    Delete business profile
+// @route   DELETE /api/v1/business/:id
+// @access  Private (Business owners only)
+export const deleteBusiness = async (req, res) => {
+    try {
+        const business = await Business.findById(req.params.id);
+
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: "Business not found"
+            });
+        }
+
+        // Check if user owns the business
+        if (business.owner.toString() !== req.user.id) {
+            return res.status(403).json({
+                success: false,
+                message: "Not authorized to delete this business"
+            });
+        }
+
+        await business.deleteOne();
+
+        res.status(200).json({
+            success: true,
+            message: "Business deleted successfully"
+        });
+    } catch (error) {
+        console.error("Delete business error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get all businesses (with search and filters)
+// @route   GET /api/v1/business
+// @access  Public
+export const getAllBusinesses = async (req, res) => {
+    try {
+        const { search, category, city, page = 1, limit = 10 } = req.query;
+
+        const query = { isActive: true };
+
+        // Search by business name or description
+        if (search) {
+            query.$text = { $search: search };
+        }
+
+        // Filter by category
+        if (category) {
+            query.category = category;
+        }
+
+        // Filter by city
+        if (city) {
+            query['address.city'] = new RegExp(city, 'i');
+        }
+
+        const businesses = await Business.find(query)
+            .populate('owner', 'name email')
+            .limit(limit * 1)
+            .skip((page - 1) * limit)
+            .sort({ createdAt: -1 });
+
+        const count = await Business.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            businesses,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            total: count
+        });
+    } catch (error) {
+        console.error("Get businesses error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
+
+// @desc    Get single business by ID
+// @route   GET /api/v1/business/:id
+// @access  Public
+export const getBusinessById = async (req, res) => {
+    try {
+        const business = await Business.findById(req.params.id).populate('owner', 'name email');
+
+        if (!business) {
+            return res.status(404).json({
+                success: false,
+                message: "Business not found"
+            });
+        }
+
+        // Increment view count
+        business.views += 1;
+        await business.save();
+
+        res.status(200).json({
+            success: true,
+            business
+        });
+    } catch (error) {
+        console.error("Get business error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Server error",
+            error: error.message
+        });
+    }
+};
