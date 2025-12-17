@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { validationResult } from "express-validator";
 import { sendPasswordResetEmail } from "../utils/emailService.js";
+import { createNotification } from "./notificationController.js";
 
 // Generate JWT Token
 const generateToken = (userId) => {
@@ -76,6 +77,15 @@ export const register = async (req, res) => {
 
         // Generate token
         const token = generateToken(newUser._id);
+
+        // Send welcome notification
+        await createNotification({
+            recipient: newUser._id,
+            type: 'system',
+            title: 'Welcome to BizConnect!',
+            message: `Hi ${newUser.name}, welcome to BizConnect! Start exploring businesses or create your own business profile.`,
+            link: newUser.userType === 'business' ? '/business/dashboard' : '/user/dashboard'
+        });
 
         res.status(201).json({
             success: true,

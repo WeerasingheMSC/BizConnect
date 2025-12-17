@@ -14,6 +14,7 @@ app.use('/api/v1/auth', (await import('./src/routers/authRouter.js')).default);
 app.use('/api/v1/user', (await import('./src/routers/userRouter.js')).default);
 app.use('/api/v1/business', (await import('./src/routers/businessRouter.js')).default);
 app.use('/api/v1/meta', (await import('./src/routers/metaRouter.js')).default);
+app.use('/api/v1/notifications', (await import('./src/routers/notificationRouter.js')).default);
 
 // Connect to MongoDB
 connectDB();

@@ -35,7 +35,16 @@ const BusinessProfileForm = () => {
       twitter: '',
       linkedin: ''
     },
-    services: []
+    services: [],
+    operatingHours: {
+      monday: { open: '', close: '' },
+      tuesday: { open: '', close: '' },
+      wednesday: { open: '', close: '' },
+      thursday: { open: '', close: '' },
+      friday: { open: '', close: '' },
+      saturday: { open: '', close: '' },
+      sunday: { open: '', close: '' }
+    }
   });
 
   const [newService, setNewService] = useState<Service>({
@@ -49,10 +58,13 @@ const BusinessProfileForm = () => {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
 
   useEffect(() => {
-    fetchMetaData();
-    if (id) {
-      fetchBusinessProfile();
-    }
+    const loadData = async () => {
+      await fetchMetaData();
+      if (id) {
+        await fetchBusinessProfile();
+      }
+    };
+    loadData();
   }, [id]);
 
   const fetchMetaData = async () => {
@@ -66,22 +78,16 @@ const BusinessProfileForm = () => {
         setCategories(categoriesRes.categories);
       }
       if (countriesRes.success) {
-        setCountries(countriesRes.countries);
-        // Set default country to Sri Lanka
-        const defaultCountry = countriesRes.countries.find((c: Country) => c.code === 'LK');
-        if (defaultCountry && !formData.address?.country) {
-          setSelectedCountry(defaultCountry);
-          setFormData(prev => ({
-            ...prev,
-            address: {
-              ...prev.address!,
-              country: defaultCountry.name
-            }
-          }));
-        }
+        const countriesList = countriesRes.countries;
+        setCountries(countriesList);
+        
+        // Return countries for use in fetchBusinessProfile
+        return countriesList;
       }
+      return [];
     } catch (err) {
       console.error('Error fetching metadata:', err);
+      return [];
     }
   };
 
@@ -94,10 +100,13 @@ const BusinessProfileForm = () => {
         const businessData = response.business;
         setFormData(businessData);
         setIsEdit(true);
+        
         // Set selected country based on business data
-        if (businessData.address?.country && countries.length > 0) {
+        if (businessData.address?.country) {
           const country = countries.find(c => c.name === businessData.address?.country);
-          if (country) setSelectedCountry(country);
+          if (country) {
+            setSelectedCountry(country);
+          }
         }
       }
     } catch (err: any) {
@@ -125,6 +134,19 @@ const BusinessProfileForm = () => {
     }
     
     if (error) setError('');
+  };
+
+  const handleOperatingHoursChange = (day: string, field: 'open' | 'close', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      operatingHours: {
+        ...prev.operatingHours!,
+        [day]: {
+          ...prev.operatingHours![day as keyof typeof prev.operatingHours],
+          [field]: value
+        }
+      }
+    }));
   };
 
   const handleAddService = () => {
@@ -180,11 +202,16 @@ const BusinessProfileForm = () => {
     setLoading(true);
 
     try {
+      console.log('Submitting formData:', formData);
+      console.log('Services being sent:', formData.services);
+      
       if (isEdit && id) {
-        await updateBusiness(id, formData);
+        const response = await updateBusiness(id, formData);
+        console.log('Update response:', response);
         setSuccess('Business profile updated successfully!');
       } else {
-        await createBusiness(formData);
+        const response = await createBusiness(formData);
+        console.log('Create response:', response);
         setSuccess('Business profile created successfully!');
       }
 
@@ -192,6 +219,7 @@ const BusinessProfileForm = () => {
         navigate('/business/dashboard');
       }, 2000);
     } catch (err: any) {
+      console.error('Submit error:', err);
       setError(err.response?.data?.message || 'Failed to save business profile');
     } finally {
       setLoading(false);
@@ -503,6 +531,32 @@ const BusinessProfileForm = () => {
               >
                 <FaPlus className="mr-2" /> Add Service
               </button>
+            </div>
+          </div>
+
+          {/* Operating Hours */}
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Operating Hours (Optional)</h2>
+            <div className="space-y-3">
+              {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                <div key={day} className="grid grid-cols-3 gap-4 items-center">
+                  <label className="text-sm font-medium text-gray-700 capitalize">{day}</label>
+                  <input
+                    type="time"
+                    value={formData.operatingHours?.[day as keyof typeof formData.operatingHours]?.open || ''}
+                    onChange={(e) => handleOperatingHoursChange(day, 'open', e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-amber-500"
+                    placeholder="Open"
+                  />
+                  <input
+                    type="time"
+                    value={formData.operatingHours?.[day as keyof typeof formData.operatingHours]?.close || ''}
+                    onChange={(e) => handleOperatingHoursChange(day, 'close', e.target.value)}
+                    className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-amber-500"
+                    placeholder="Close"
+                  />
+                </div>
+              ))}
             </div>
           </div>
 
