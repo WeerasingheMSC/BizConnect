@@ -1,6 +1,5 @@
 import { FaUserLarge, FaLock } from "react-icons/fa6";
 import { IoMdEye, IoMdEyeOff } from "react-icons/io";
-import { MdError } from "react-icons/md";
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
