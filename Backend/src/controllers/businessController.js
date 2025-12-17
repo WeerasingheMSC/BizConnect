@@ -77,6 +77,9 @@ export const getMyBusiness = async (req, res) => {
 // @access  Private (Business owners only)
 export const updateBusiness = async (req, res) => {
     try {
+        console.log('Update request body:', req.body);
+        console.log('Services in request:', req.body.services);
+        
         const business = await Business.findById(req.params.id);
 
         if (!business) {
@@ -99,6 +102,9 @@ export const updateBusiness = async (req, res) => {
             { $set: req.body },
             { new: true, runValidators: true }
         );
+
+        console.log('Updated business:', updatedBusiness);
+        console.log('Updated services:', updatedBusiness.services);
 
         res.status(200).json({
             success: true,
@@ -158,7 +164,15 @@ export const deleteBusiness = async (req, res) => {
 // @access  Public
 export const getAllBusinesses = async (req, res) => {
     try {
-        const { search, category, city, page = 1, limit = 10 } = req.query;
+        const { 
+            search, 
+            category, 
+            city, 
+            sortBy = 'createdAt',
+            order = 'desc',
+            page = 1, 
+            limit = 10 
+        } = req.query;
 
         const query = { isActive: true };
 
@@ -177,11 +191,15 @@ export const getAllBusinesses = async (req, res) => {
             query['address.city'] = new RegExp(city, 'i');
         }
 
+        // Sort options
+        const sortOptions = {};
+        sortOptions[sortBy] = order === 'asc' ? 1 : -1;
+
         const businesses = await Business.find(query)
             .populate('owner', 'name email')
             .limit(limit * 1)
             .skip((page - 1) * limit)
-            .sort({ createdAt: -1 });
+            .sort(sortOptions);
 
         const count = await Business.countDocuments(query);
 
@@ -216,9 +234,15 @@ export const getBusinessById = async (req, res) => {
             });
         }
 
-        // Increment view count
-        business.views += 1;
-        await business.save();
+        // Increment view count only if:
+        // 1. User is not authenticated OR
+        // 2. User is authenticated but not the owner
+        const shouldIncrementView = !req.user || (req.user && business.owner._id.toString() !== req.user.id);
+        
+        if (shouldIncrementView) {
+            business.views = (business.views || 0) + 1;
+            await business.save();
+        }
 
         res.status(200).json({
             success: true,
