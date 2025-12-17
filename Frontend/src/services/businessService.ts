@@ -101,3 +101,19 @@ export const getBusinessById = async (id: string): Promise<BusinessResponse> => 
     const response = await api.get(`/business/${id}`);
     return response.data;
 };
+
+// Search businesses with filters
+export const searchBusinesses = async (params?: {
+    keyword?: string;
+    category?: string;
+    city?: string;
+    state?: string;
+    services?: string;
+    sortBy?: string;
+    order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+}): Promise<BusinessResponse> => {
+    const response = await api.get('/business/search/filter', { params });
+    return response.data;
+};

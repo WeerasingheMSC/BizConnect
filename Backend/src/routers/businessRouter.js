@@ -7,7 +7,8 @@ import {
     updateBusiness,
     deleteBusiness,
     getAllBusinesses,
-    getBusinessById
+    getBusinessById,
+    searchBusinesses
 } from '../controllers/businessController.js';
 
 const router = express.Router();
@@ -35,6 +36,7 @@ router.put('/:id', protect, updateBusiness);
 router.delete('/:id', protect, deleteBusiness);
 
 // Public routes - MUST come after specific routes
+router.get('/search/filter', searchBusinesses);
 router.get('/', getAllBusinesses);
 router.get('/:id', getBusinessById);
 

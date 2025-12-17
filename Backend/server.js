@@ -11,7 +11,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/v1/auth', (await import('./src/routers/authRouter.js')).default);
-app.use('/api/v1', (await import('./src/routers/userRouter.js')).default);
+app.use('/api/v1/user', (await import('./src/routers/userRouter.js')).default);
 app.use('/api/v1/business', (await import('./src/routers/businessRouter.js')).default);
 
 // Connect to MongoDB

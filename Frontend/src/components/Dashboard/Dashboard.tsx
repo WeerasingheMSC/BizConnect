@@ -1,9 +1,19 @@
 import { useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { logout, getStoredUser } from '../../services/authService';
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const user = getStoredUser();
+
+  useEffect(() => {
+    // Redirect based on user type
+    if (user?.userType === 'business') {
+      navigate('/business/dashboard', { replace: true });
+    } else if (user?.userType === 'user') {
+      navigate('/user/dashboard', { replace: true });
+    }
+  }, [user, navigate]);
 
   const handleLogout = () => {
     logout();
