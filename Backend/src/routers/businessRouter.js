@@ -12,11 +12,7 @@ import {
 
 const router = express.Router();
 
-// Public routes
-router.get('/', getAllBusinesses);
-router.get('/:id', getBusinessById);
-
-// Protected routes (require authentication)
+// Protected routes (require authentication) - MUST come before parameterized routes
 router.get('/my-business', protect, getMyBusiness);
 
 router.post('/', 
@@ -37,5 +33,9 @@ router.post('/',
 
 router.put('/:id', protect, updateBusiness);
 router.delete('/:id', protect, deleteBusiness);
+
+// Public routes - MUST come after specific routes
+router.get('/', getAllBusinesses);
+router.get('/:id', getBusinessById);
 
 export default router;

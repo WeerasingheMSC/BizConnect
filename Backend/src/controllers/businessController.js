@@ -24,15 +24,7 @@ export const createBusiness = async (req, res) => {
             });
         }
 
-        // Check if user already has a business
-        const existingBusiness = await Business.findOne({ owner: req.user.id });
-        if (existingBusiness) {
-            return res.status(400).json({
-                success: false,
-                message: "You already have a business profile"
-            });
-        }
-
+        // Allow multiple businesses per owner
         const businessData = {
             ...req.body,
             owner: req.user.id
@@ -56,26 +48,22 @@ export const createBusiness = async (req, res) => {
     }
 };
 
-// @desc    Get business by owner
+// @desc    Get all businesses owned by the authenticated user
 // @route   GET /api/v1/business/my-business
 // @access  Private (Business owners only)
 export const getMyBusiness = async (req, res) => {
     try {
-        const business = await Business.findOne({ owner: req.user.id }).populate('owner', 'name email');
+        const businesses = await Business.find({ owner: req.user.id })
+            .populate('owner', 'name email')
+            .sort({ createdAt: -1 });
         
-        if (!business) {
-            return res.status(404).json({
-                success: false,
-                message: "No business profile found"
-            });
-        }
-
         res.status(200).json({
             success: true,
-            business
+            count: businesses.length,
+            businesses
         });
     } catch (error) {
-        console.error("Get business error:", error);
+        console.error("Get my businesses error:", error);
         res.status(500).json({
             success: false,
             message: "Server error",
