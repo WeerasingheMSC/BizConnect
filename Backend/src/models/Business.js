@@ -35,7 +35,7 @@ const businessSchema = new mongoose.Schema({
     category: {
         type: String,
         required: true,
-        enum: ['Restaurant', 'Retail', 'Services', 'Healthcare', 'Education', 'Technology', 'Construction', 'Entertainment', 'Other']
+        trim: true
     },
     logo: {
         type: String,
@@ -69,7 +69,8 @@ const businessSchema = new mongoose.Schema({
         },
         country: {
             type: String,
-            default: 'Sri Lanka'
+            required: true,
+            trim: true
         }
     },
     services: [serviceSchema],
